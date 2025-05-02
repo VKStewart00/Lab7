@@ -8,6 +8,7 @@ For this lab, you will be joining and filtering related data sets to solve a mur
 
 # Part 1: GitHub Workflow
 
+
 At the top of the document (in the YAML) there is an `author` line that says 
 `"Your name here!"`. Change this to be your name and save your file either by
 clicking on the blue floppy disk or with a shortcut (command / control + s). 
@@ -29,6 +30,7 @@ in your environment.
 -   Make your code readable and nicely formatted.
 
 -   Think through your desired result **before** writing any code.
+
 
 # Part 3: Finding the Killer
 
@@ -70,9 +72,14 @@ Detective Wickham reaches out to you...
 **Step 1: Find the police report in `crime_scene_report`. Then used the information in the report to move on to the next data source based on the information learned.**
 
 ```{r}
-# Code for looking at the relevant crime scene report.
+#| label: crime-scene-report
 
+## Filter to find the murder that happened in SQL City on Jan 15, 2018
 
+look_ <- crime_scene_report |>
+  filter(date == "20180115", type == "murder", city == "SQL City") 
+
+view(look_)
 ```
 
 
@@ -94,8 +101,103 @@ tables manually. Functions from `stringr` and `lubridate` will also be useful.
 
 
 
+```{r}
+#| label: witnessFinding
+
+## Looking for all people named annabel who live on franklin
+witness1 <- person |>
+  filter(str_detect(name, "Annabel") &  address_street_name == "Franklin Ave")
+
+
+## last person who lives on franklin
+witness2 <- person |>
+  filter( address_street_name == "Franklin Ave")|>
+  arrange(desc(address_number))|>
+  slice(1)
+                    
+                    
+          
+
+```
+
+```{r}
+#| label: interviews
+
+## Look up interviews from those two witnesses
+interview |>
+  filter(person_id %in% c(witness1$id, witness2$id))
+
+
+```
+
+```{r}
+#| label: gymLook!
+
+## see who was there
+possiblekillers <- get_fit_now_check_in|>
+  filter(check_in_date == "20180109")
+
+possiblekillers2 <- get_fit_now_member|>
+  filter( id %in% possiblekillers$membership_id)
+
+```
+
+
+```{r}
+#|label: moreInterviews
+
+
+## interview people
+possiblekillers3 <- person |>
+  filter(name %in% possiblekillers2$name)
+
+interview|>
+  filter( person_id %in% possiblekillers3$id)
+
+## Someone was hired by a women with a lot of money...
+
+```
+```{r}
+#|label: someone who drives a model s, and is either 5.5 or 5.7, and has gone to the play
+
+## Filter drivers with red hair, Tesla Model S, and height 65–67 inches
+red_tesla <- drivers_license |>
+  filter(car_make == 'Tesla',
+         car_model == 'Model S',
+         height >= 65,
+         height <= 67,
+         hair_color == 'red')
+
+## Join with person table to get individuals matching the above driver profile
+red_tesla_people <- person |>
+  inner_join(red_tesla, by = c("license_id" = "id"))
+
+## Filter concert check-ins for SQL Symphony Concert during December 2017
+concert_checkins <- facebook_event_checkin |>
+  filter(event_name == "SQL Symphony Concert",
+         date >= "20171201", date <= "20171231")
+
+## Count how many times each person attended and filter for those who attended 3 times
+concert_counts <- concert_checkins |>
+  count(person_id) |>
+  filter(n == 3)
+
+## Find the person(s) who match both the Tesla profile and attended 3 times
+final_suspect <- red_tesla_people |>
+  filter(id %in% concert_counts$person_id)
+
+## Display the final suspect's information
+final_suspect
+
+
+
+
+```
+
+
 ::: callout-note
 ## And the final suspect is...
 
-*put the name of the person responsible for the murder here.*
+*Miranda Priestly*
+
 :::
